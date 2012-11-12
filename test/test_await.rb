@@ -9,15 +9,36 @@ class TestAwait < Test::Unit::TestCase
   end
   
   def test_await_default_state
-    executed = false
+    triggered = false
 
     em do
       await do
-        executed = true
+        triggered = true
       end
     end
 
-    assert_equal true, executed
+    assert_equal true, triggered
+  end
+  
+  def test_await_block_object
+    trigger = nil
+    exited = false
+    
+    em do
+      await do
+        defer do |_trigger|
+          trigger = _trigger
+        end
+      end
+    
+      exited = true
+    end
+    
+    assert_equal false, exited
+
+    trigger.call
+
+    assert_equal true, exited
   end
   
   def test_await_single_defer
@@ -32,6 +53,33 @@ class TestAwait < Test::Unit::TestCase
     end
 
     assert_equal true, triggered
+  end
+
+  def test_await_nested
+    triggered = 0
+
+    em do
+      await do
+        defer do
+          await do
+            defer do
+              triggered += 1
+            end.call
+          end
+          
+          assert_equal 1, triggered
+
+          await do
+            defer do
+              triggered += 2
+            end.call
+          end
+        end.call
+      end
+      assert_equal 3, triggered
+    end
+
+    assert_equal 3, triggered
   end
 
   def test_await_delayed_defer
