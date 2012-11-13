@@ -1,4 +1,4 @@
-= await
+# await
 
 This implements the await/defer pattern in Ruby using fibers within the
 EventMachine environment.
@@ -11,7 +11,7 @@ This can be used to simplify otherwise complicated callback structures where
 a number of operations can be performed in parallel. Further complexity arises
 when some of these operations have optional steps.
 
-== Examples
+## Examples
 
 In order to execute properly, an `await` call must be created within a fiber
 that can yield. Since the root fiber cannot yield, a secondary fiber must be
@@ -89,7 +89,7 @@ with `call`.
 
 More examples of callback structures are available in the various unit tests.
 
-== Troubleshooting
+## Troubleshooting
 
 If the secondary fiber has not been created you will see errors like:
 
@@ -100,7 +100,7 @@ operation is considered completed. If an additional asynchronous operation
 must be performed before it is complete, be sure to wrap any and all of these
 calls with `defer` as well to tag and track them properly.
 
-== Copyright
+## Copyright
 
 Copyright (c) 2012 Scott Tadman, The Working Group Inc.
 See LICENSE.txt for further details.
