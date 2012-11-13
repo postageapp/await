@@ -26,9 +26,7 @@ class TestAwait < Test::Unit::TestCase
     
     em do
       await do
-        defer do |_trigger|
-          trigger = _trigger
-        end
+        trigger = defer
       end
     
       exited = true
@@ -66,7 +64,7 @@ class TestAwait < Test::Unit::TestCase
               triggered += 1
             end.call
           end
-          
+
           assert_equal 1, triggered
 
           await do
@@ -76,6 +74,7 @@ class TestAwait < Test::Unit::TestCase
           end
         end.call
       end
+
       assert_equal 3, triggered
     end
 
@@ -103,35 +102,89 @@ class TestAwait < Test::Unit::TestCase
     assert_equal true, triggered
   end
 
-  def test_await_delayed_defer_fiber
+  def test_await_delayed_double_defer
+    outer_trigger = nil
+    inner_trigger = nil
     triggered = false
-    trigger_fiber = Fiber.new do
-      Fiber.yield
-      triggered = true
-    end
-
+    continued = false
+    
     em do
       await do
-        defer(trigger_fiber)
+        outer_trigger = defer do
+          inner_trigger = defer do
+            triggered = true
+          end
+        end
       end
+      
+      continued = true
     end
 
     assert_equal false, triggered
+    assert_equal false, continued
 
-    assert trigger_fiber
-    trigger_fiber.resume
+    assert !inner_trigger
+
+    outer_trigger.call
+    
+    assert_equal false, triggered
+    assert_equal false, continued
+
+    assert inner_trigger
+    
+    inner_trigger.call
     
     assert_equal true, triggered
+    assert_equal true, continued
+  end
+
+  def test_await_nested_delayed_trigger
+    outer_trigger = nil
+    inner_trigger = nil
+    triggered = false
+    continued = false
+    
+    em do
+      await do
+        outer_trigger = defer do
+          await do
+            inner_trigger = defer do
+              triggered = true
+            end
+          end
+        end
+      end
+      
+      continued = true
+    end
+
+    assert_equal false, triggered
+    assert_equal false, continued
+
+    assert !inner_trigger
+
+    outer_trigger.call
+    
+    assert_equal false, triggered
+    assert_equal false, continued
+
+    assert inner_trigger
+    
+    inner_trigger.call
+    
+    assert_equal true, triggered
+    assert_equal true, continued
   end
   
   def test_await_delayed_defer_callback
     triggered = false
     trigger_callback = nil
+    results = nil
 
     em do
       await do
-        defer do |callback|
-          trigger_callback = callback
+        trigger_callback = defer do |*args|
+          results = args
         end
       end
 
@@ -141,9 +194,10 @@ class TestAwait < Test::Unit::TestCase
     assert_equal false, triggered
 
     assert trigger_callback
-    trigger_callback.call
+    trigger_callback.call(1, :two, '3')
     
     assert_equal true, triggered
+    assert_equal [ 1, :two, '3' ], results
   end
 
   def test_await_multiple_defer

@@ -1,8 +1,8 @@
 source "http://rubygems.org"
 
-gem "eventmachine"
+gem 'eventmachine'
 
 group :development do
-  gem "bundler"
-  gem "jeweler"
+  gem 'bundler'
+  gem 'jeweler'
 end
